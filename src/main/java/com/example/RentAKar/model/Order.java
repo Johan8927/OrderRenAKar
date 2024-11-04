@@ -1,4 +1,4 @@
-package com.example.RentAKar.order;
+package com.example.RentAKar.model;
 
 import jakarta.persistence.*;
 

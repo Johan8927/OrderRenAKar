@@ -1,6 +1,6 @@
-package com.example.RentAKar.orderRepository;
+package com.example.RentAKar.orderrepository;
 
-import com.example.RentAKar.order.Order;
+import com.example.RentAKar.model.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 
