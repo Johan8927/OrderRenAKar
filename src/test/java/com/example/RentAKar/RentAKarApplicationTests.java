@@ -1,13 +1,13 @@
 package com.example.RentAKar;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+
+@com.example.RentAKar.SpringBootTest
 class RentAKarApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 
 }

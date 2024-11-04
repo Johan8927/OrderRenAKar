@@ -8,14 +8,13 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class OrderServiceImpl implements OrderService{
+public class OrderServiceImpl implements OrderService {
 
     @Autowired
     public void OrderService(OrderRepository orderRepository) {
         List<Order> orders = orderRepository.findAll();
 
     }
-
 
     @Autowired
     private OrderRepository orderRepository;
@@ -33,7 +32,7 @@ public class OrderServiceImpl implements OrderService{
     }
 
     public Order saveOrder(Order order) {
-        if (order.getId()!= null) {
+        if (order.getId() != null) {
             throw new RuntimeException("Order already has an id: " + order.getId());
         }
         if (order.getOrderDate() == null) {
@@ -50,7 +49,7 @@ public class OrderServiceImpl implements OrderService{
 
     public void deleteOrder(Long id) {
         if (orderRepository.existsById(id))
-        orderRepository.deleteById(id);
+            orderRepository.deleteById(id);
         else {
             throw new RuntimeException("Order not found with id: " + id);
         }
