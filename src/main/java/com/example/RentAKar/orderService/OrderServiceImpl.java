@@ -10,10 +10,9 @@ import java.util.List;
 @Service
 public class OrderServiceImpl implements OrderService{
 
-    private List<Order> orders;
     @Autowired
     public void OrderService(OrderRepository orderRepository) {
-        this.orders = orderRepository.findAll();
+        List<Order> orders = orderRepository.findAll();
 
     }
 
