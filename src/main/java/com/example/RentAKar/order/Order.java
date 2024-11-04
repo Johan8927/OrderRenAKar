@@ -11,43 +11,68 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    private LocalDate orderDate;
-    private Double totalAmount;
-    private String status;
+    private int userId;
+    private int vehiculeId;
+    private LocalDate startingOrderDate;
+    private LocalDate EndingOrderDate;
+    private boolean hasBeenPayed;
+    private int caution;
 
     // Getters et Setters
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setOrderDate(LocalDate orderDate) {
-        this.orderDate = orderDate;
-    }
-
-    public void setTotalAmount(Double totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
 
     public Long getId() {
         return id;
     }
 
-    public LocalDate getOrderDate() {
-        return orderDate;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public Double getTotalAmount() {
-        return totalAmount;
+    public int getUserId() {
+        return userId;
     }
 
-    public String getStatus() {
-        return status;
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
+    public int getVehiculeId() {
+        return vehiculeId;
+    }
+
+    public void setVehiculeId(int vehiculeId) {
+        this.vehiculeId = vehiculeId;
+    }
+
+    public LocalDate getStartingOrderDate() {
+        return startingOrderDate;
+    }
+
+    public void setStartingOrderDate(LocalDate startingOrderDate) {
+        this.startingOrderDate = startingOrderDate;
+    }
+
+    public boolean isHasBeenPayed() {
+        return hasBeenPayed;
+    }
+
+    public void setHasBeenPayed(boolean hasBeenPayed) {
+        this.hasBeenPayed = hasBeenPayed;
+    }
+
+    public LocalDate getEndingOrderDate() {
+        return EndingOrderDate;
+    }
+
+    public void setEndingOrderDate(LocalDate endingOrderDate) {
+        EndingOrderDate = endingOrderDate;
+    }
+
+    public int getCaution() {
+        return caution;
+    }
+
+    public void setCaution(int caution) {
+        this.caution = caution;
+    }
 }

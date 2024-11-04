@@ -32,39 +32,35 @@ public class OrderServiceImpl implements OrderService {
     }
 
     public Order saveOrder(Order order) {
-        if (order.getId() != null) {
-            throw new RuntimeException("Order already has an id: " + order.getId());
+
+        if (order.getId() == null) {
+            orderRepository.save(order);
+            return order;
+        } else {
+            throw new RuntimeException("Order already exists with id: " + order.getId());
         }
-        if (order.getOrderDate() == null) {
-            throw new RuntimeException("Order must have an order date");
-        }
-        if (order.getTotalAmount() == null) {
-            throw new RuntimeException("Order must have a total amount");
-        }
-        if (order.getStatus() == null) {
-            throw new RuntimeException("Order must have a status");
-        }
-        return orderRepository.save(order);
     }
 
     public void deleteOrder(Long id) {
-        if (orderRepository.existsById(id))
-            orderRepository.deleteById(id);
+        if (orderRepository.existsById(id)) orderRepository.deleteById(id);
         else {
             throw new RuntimeException("Order not found with id: " + id);
         }
     }
 
     public Order updateOrder(Long id, Order updatedOrder) {
-        Order existingOrder = orderRepository.findById(id).orElse(null);
-        if (existingOrder != null) {
-            existingOrder.setOrderDate(updatedOrder.getOrderDate());
-            existingOrder.setTotalAmount(updatedOrder.getTotalAmount());
-            existingOrder.setStatus(updatedOrder.getStatus());
+
+        if (orderRepository.existsById(id)) {
+            Order existingOrder = orderRepository.findById(id).get();
+            existingOrder.setUserId(updatedOrder.getUserId());
+            existingOrder.setVehiculeId(updatedOrder.getVehiculeId());
+            existingOrder.setStartingOrderDate(updatedOrder.getStartingOrderDate());
+            existingOrder.setHasBeenPayed(updatedOrder.isHasBeenPayed());
+            existingOrder.setEndingOrderDate(updatedOrder.getEndingOrderDate());
+            existingOrder.setCaution(updatedOrder.getCaution());
             return orderRepository.save(existingOrder);
+        } else {
+            throw new RuntimeException("Order not found with id: " + id);
         }
-        return null;
     }
-
-
 }
