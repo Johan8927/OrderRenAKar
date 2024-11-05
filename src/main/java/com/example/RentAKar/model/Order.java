@@ -8,7 +8,7 @@ import java.time.LocalDate;
 @Table(name = "`order`")
 public class Order {
 
-
+    // constructeur général de "order"
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id")
