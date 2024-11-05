@@ -8,9 +8,11 @@ import java.time.LocalDate;
 @Table(name = "`order`")
 public class Order {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "order_id")
+    private int id;
     private int userId;
     private int vehiculeId;
     private LocalDate startingOrderDate;
@@ -20,11 +22,11 @@ public class Order {
 
     // Getters et Setters
 
-    public Long getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
