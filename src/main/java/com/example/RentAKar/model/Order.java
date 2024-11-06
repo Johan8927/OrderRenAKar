@@ -1,7 +1,6 @@
 package com.example.RentAKar.model;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDate;
 
 @Entity
@@ -38,12 +37,12 @@ public class Order {
         this.userId = userId;
     }
 
-    public int getVehiculeId() {
+    public long getVehiculeId() {
         return vehiculeId;
     }
 
-    public void setVehiculeId(int vehiculeId) {
-        this.vehiculeId = vehiculeId;
+    public void setVehiculeId(Long vehiculeId) {
+        this.vehiculeId = Math.toIntExact(vehiculeId);
     }
 
     public LocalDate getStartingOrderDate() {

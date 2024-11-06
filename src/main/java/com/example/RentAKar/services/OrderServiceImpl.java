@@ -1,21 +1,36 @@
 package com.example.RentAKar.services;
 
 import com.example.RentAKar.model.Order;
+import com.example.RentAKar.model.Vehicule;
 import com.example.RentAKar.orderrepository.OrderRepository;
 import com.example.RentAKar.orderrepository.OrderService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.util.List;
 
-
-@Service  // indique que c'est un service pour le partage des données
+@Service  // Indique que c'est un service pour le partage des données
 public class OrderServiceImpl implements OrderService {
 
-    @Autowired // injection automatique de dépendances
+    private static final int MIN_RENTAL_DAYS = 3;  // Constante pour la durée minimale de location
+    private static final int CAUTION_RATE = 10;    // Constante pour le calcul de la caution
+    private final RestTemplate restTemplate;
+
+    public OrderServiceImpl(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    public Vehicule getVehiculeDetails(Long vehiculeId) {
+        String url = "http://localhost:9091/vehicules" + vehiculeId;
+        return restTemplate.getForObject(url, Vehicule.class);
+    }
+    @Autowired // Injection automatique de dépendances
     private OrderRepository orderRepository;
 
-    // implémentation de l'interface OrderService
+
     @Override
     public List<Order> getAllOrders() {
         return orderRepository.findAll(); // findAll sur la bdd
@@ -28,21 +43,53 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order saveOrder(Order order) {
-        return orderRepository.save(order); // save sur la bdd
+    public Order saveOrder(@NotNull Order order) {
+        // Vérifier si le client a déjà une commande active
+        boolean hasActiveOrder = orderRepository.existsByUserIdAndHasBeenPayedFalse(order.getUserId());
+        if (hasActiveOrder) {
+            throw new RuntimeException("Vous ne pouvez commander qu'un seul véhicule à la fois!");
+        }
+
+        // Vérification de la disponibilité du véhicule
+        Vehicule vehicule = (Vehicule) vehicule.getReferenceById(order.getVehiculeId());
+
+        if (!vehicule.isAvailable()) {
+            throw new RuntimeException("Véhicule non disponible");
+        }
+
+        // Vérification des dates de prêt
+        LocalDate today = LocalDate.now();
+        if (order.getStartingOrderDate().isBefore(today) || order.getEndingOrderDate().isBefore(today)) {
+            throw new RuntimeException("Les dates de prêt doivent être dans le futur.");
+        }
+
+        // Vérification du temps de prêt
+        if (order.getStartingOrderDate().isAfter(order.getEndingOrderDate())) {
+            throw new RuntimeException("La date de début doit être avant la date de fin.");
+        }
+
+        // Calcul de la caution
+        int caution = (int) (order.getEndingOrderDate().toEpochDay() - order.getStartingOrderDate().toEpochDay()) * CAUTION_RATE;
+        order.setCaution(caution);  // Ajouter la caution à l'ordre
+
+        // Marquer le véhicule comme non disponible
+        vehicule.setIsAvailable(false);
+        vehiculeRepository.save(vehicule);
+
+        return orderRepository.save(order); // Enregistrer la commande dans la base de données
     }
 
     @Override
     public void deleteOrder(Long id) {
-        if (!orderRepository.existsById(id)) { // si pas de repos(commande) avec id
+        if (!orderRepository.existsById(id)) {
             throw new RuntimeException("Order not found with id: " + id);
         }
-        orderRepository.deleteById(id); // suppression par Id
+        orderRepository.deleteById(id); // Suppression par Id
     }
 
     @Override
-    public Order updateOrder(Long id, Order updatedOrder) {
-        Order existingOrder = orderRepository.findById(id) // regarde s'il y a un id de commande déjà présent dans la requête
+    public Order updateOrder(Long id, @NotNull Order updatedOrder) {
+        Order existingOrder = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
 
         // Mise à jour des champs de l'ordre existant
@@ -53,7 +100,7 @@ public class OrderServiceImpl implements OrderService {
         existingOrder.setHasBeenPayed(updatedOrder.isHasBeenPayed());
         existingOrder.setCaution(updatedOrder.getCaution());
 
-        return orderRepository.save(existingOrder); // enfin sauvegarde en bdd
+        return orderRepository.save(existingOrder); // Sauvegarde dans la base de données
     }
 
 }
