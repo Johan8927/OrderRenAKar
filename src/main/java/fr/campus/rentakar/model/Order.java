@@ -1,4 +1,4 @@
-package com.example.RentAKar.model;
+package fr.campus.rentakar.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
@@ -20,6 +20,19 @@ public class Order {
     private int caution;
 
     // Getters et Setters
+
+    public Order(int id, int userId, int vehiculeId, LocalDate startingOrderDate, LocalDate endingOrderDate, boolean hasBeenPayed, int caution) {
+        this.id = id;
+        this.userId = userId;
+        this.vehiculeId = vehiculeId;
+        this.startingOrderDate = startingOrderDate;
+        EndingOrderDate = endingOrderDate;
+        this.hasBeenPayed = hasBeenPayed;
+        this.caution = caution;
+    }
+
+    public Order() {
+    }
 
     public int getId() {
         return id;

@@ -1,82 +1,76 @@
-package com.example.RentAKar.services;
+// OrderServiceImpl.java
+package fr.campus.rentakar.services;
 
-import com.example.RentAKar.model.Order;
-import com.example.RentAKar.model.Vehicule;
-import com.example.RentAKar.orderrepository.OrderRepository;
-import com.example.RentAKar.orderrepository.OrderService;
-import org.jetbrains.annotations.NotNull;
+import fr.campus.rentakar.model.Order;
+import fr.campus.rentakar.model.Vehicule;
+import fr.campus.rentakar.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Service  // Indique que c'est un service pour le partage des données
+@Service
 public class OrderServiceImpl implements OrderService {
 
-    private static final int MIN_RENTAL_DAYS = 3;  // Constante pour la durée minimale de location
-    private static final int CAUTION_RATE = 10;    // Constante pour le calcul de la caution
+    private static final int CAUTION_RATE = 10;
+    private final OrderRepository orderRepository;
     private final RestTemplate restTemplate;
 
-    public OrderServiceImpl(RestTemplate restTemplate) {
+    @Value("${service.vehicles.url}")
+    private String vehicleServiceUrl;
+
+    @Autowired
+    public OrderServiceImpl(OrderRepository orderRepository, RestTemplate restTemplate) {
+        this.orderRepository = orderRepository;
         this.restTemplate = restTemplate;
     }
 
     public Vehicule getVehiculeDetails(Long vehiculeId) {
-        String url = "http://localhost:9091/vehicules" + vehiculeId;
+
+        String url = vehicleServiceUrl + vehiculeId;
         return restTemplate.getForObject(url, Vehicule.class);
     }
-    @Autowired // Injection automatique de dépendances
-    private OrderRepository orderRepository;
-
 
     @Override
     public List<Order> getAllOrders() {
-        return orderRepository.findAll(); // findAll sur la bdd
+        return orderRepository.findAll();
     }
 
     @Override
     public Order getOrderById(Long id) {
-        return orderRepository.findById(id) // findById sur la bdd
+        return orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
     }
 
     @Override
-    public Order saveOrder(@NotNull Order order) {
-        // Vérifier si le client a déjà une commande active
+    public Order saveOrder(Order order) {
         boolean hasActiveOrder = orderRepository.existsByUserIdAndHasBeenPayedFalse(order.getUserId());
         if (hasActiveOrder) {
             throw new RuntimeException("Vous ne pouvez commander qu'un seul véhicule à la fois!");
         }
 
-        // Vérification de la disponibilité du véhicule
-        Vehicule vehicule = (Vehicule) vehicule.getReferenceById(order.getVehiculeId());
-
+        Vehicule vehicule = getVehiculeDetails(order.getVehiculeId());
         if (!vehicule.isAvailable()) {
             throw new RuntimeException("Véhicule non disponible");
         }
 
-        // Vérification des dates de prêt
         LocalDate today = LocalDate.now();
         if (order.getStartingOrderDate().isBefore(today) || order.getEndingOrderDate().isBefore(today)) {
             throw new RuntimeException("Les dates de prêt doivent être dans le futur.");
         }
 
-        // Vérification du temps de prêt
         if (order.getStartingOrderDate().isAfter(order.getEndingOrderDate())) {
             throw new RuntimeException("La date de début doit être avant la date de fin.");
         }
 
-        // Calcul de la caution
         int caution = (int) (order.getEndingOrderDate().toEpochDay() - order.getStartingOrderDate().toEpochDay()) * CAUTION_RATE;
-        order.setCaution(caution);  // Ajouter la caution à l'ordre
-
-        // Marquer le véhicule comme non disponible
+        order.setCaution(caution);
         vehicule.setIsAvailable(false);
-        vehiculeRepository.save(vehicule);
 
-        return orderRepository.save(order); // Enregistrer la commande dans la base de données
+        return orderRepository.save(order);
     }
 
     @Override
@@ -84,15 +78,14 @@ public class OrderServiceImpl implements OrderService {
         if (!orderRepository.existsById(id)) {
             throw new RuntimeException("Order not found with id: " + id);
         }
-        orderRepository.deleteById(id); // Suppression par Id
+        orderRepository.deleteById(id);
     }
 
     @Override
-    public Order updateOrder(Long id, @NotNull Order updatedOrder) {
+    public Order updateOrder(Long id, Order updatedOrder) {
         Order existingOrder = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
 
-        // Mise à jour des champs de l'ordre existant
         existingOrder.setUserId(updatedOrder.getUserId());
         existingOrder.setVehiculeId(updatedOrder.getVehiculeId());
         existingOrder.setStartingOrderDate(updatedOrder.getStartingOrderDate());
@@ -100,7 +93,16 @@ public class OrderServiceImpl implements OrderService {
         existingOrder.setHasBeenPayed(updatedOrder.isHasBeenPayed());
         existingOrder.setCaution(updatedOrder.getCaution());
 
-        return orderRepository.save(existingOrder); // Sauvegarde dans la base de données
+        return orderRepository.save(existingOrder);
     }
 
+    @Override
+    public List<Order> getOrdersByUserId(Long userId) {
+        return List.of();
+    }
+
+    @Override
+    public List<Order> getOrdersByVehicleId(Long vehicleId) {
+        return List.of();
+    }
 }

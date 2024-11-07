@@ -1,4 +1,4 @@
-package com.example.RentAKar.Config;
+package fr.campus.rentakar.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

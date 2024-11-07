@@ -1,4 +1,4 @@
-package com.example.RentAKar.model;
+package fr.campus.rentakar.model;
 
 public class User {
 
@@ -16,6 +16,9 @@ public class User {
     String email;
     int phoneNumber;
     String role;
+
+    public User() {
+    }
 
     public int getId() {
         return id;
@@ -129,22 +132,5 @@ public class User {
         this.role = role;
     }
 
-    public User(int id, String userName, String firstName, String dateOfBirth, int licenceId, int licenceYear, int hasOrderId, int hasVehiculeId, String adress, int postalCode, String password, String email, int phoneNumber, String role) {
-
-        this.id = id;
-        this.userName = userName;
-        this.firstName = firstName;
-        this.dateOfBirth = dateOfBirth;
-        this.licenceId = licenceId;
-        this.licenceYear = licenceYear;
-        this.hasOrderId = hasOrderId;
-        this.hasVehiculeId = hasVehiculeId;
-        this.adress = adress;
-        this.postalCode = postalCode;
-        this.password = password;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-        this.role = role;
-
-    }
 }
+

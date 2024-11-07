@@ -1,9 +1,9 @@
-package com.example.RentAKar;
+package fr.campus.rentakar;
 
 import org.junit.jupiter.api.Test;
 
 
-@com.example.RentAKar.SpringBootTest
+@SpringBootTest
 class RentAKarApplicationTests {
 
     @Test

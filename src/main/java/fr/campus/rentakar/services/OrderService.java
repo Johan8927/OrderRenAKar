@@ -1,11 +1,10 @@
-package com.example.RentAKar.orderrepository;
+package fr.campus.rentakar.services;
 
-import com.example.RentAKar.model.Order;
+import fr.campus.rentakar.model.Order;
 
 import java.util.List;
 
 public interface OrderService {
-    // ensemble des intéractions autorisées
     List<Order> getAllOrders();
 
     Order getOrderById(Long id);
@@ -15,4 +14,10 @@ public interface OrderService {
     void deleteOrder(Long id);
 
     Order updateOrder(Long id, Order updatedOrder);
+
+    List<Order> getOrdersByUserId(Long userId);
+
+    List<Order> getOrdersByVehicleId(Long vehicleId);
+
 }
+

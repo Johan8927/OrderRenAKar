@@ -1,4 +1,4 @@
-package com.example.RentAKar;
+package fr.campus.rentakar;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.SpringApplication;

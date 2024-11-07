@@ -7,7 +7,7 @@
         <version>3.3.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.example</groupId>
+    <groupId>fr.campus.rentakar</groupId>
     <artifactId>OrderRentAKar</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>RentAKar</name>
@@ -55,12 +55,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
     <distributionManagement>

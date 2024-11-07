@@ -1,4 +1,4 @@
-package com.example.RentAKar.model;
+package fr.campus.rentakar.model;
 
 
 
@@ -19,6 +19,8 @@ public class Vehicule {
     private boolean isAvailable;
 
     // constructor
+
+
     public Vehicule(int id, char type, String model, char brand, char color, int kilometers, int horsePower, float cargo, int capacity, int displacement, char registration, boolean isAvailable) {
         this.id = id;
         this.type = type;

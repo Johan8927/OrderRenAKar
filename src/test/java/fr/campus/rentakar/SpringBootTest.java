@@ -1,4 +1,4 @@
-package com.example.RentAKar;
+package fr.campus.rentakar;
 
 public @interface SpringBootTest {
 }
