@@ -34,7 +34,7 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Order createOrder(@RequestBody Order order) {
+    public boolean createOrder(@RequestBody Order order) {
         return orderService.saveOrder(order);
     }
 
@@ -44,7 +44,7 @@ public class OrderController {
     }
 
     @PutMapping("/return/{id}")
-    public Order returnOrder(@PathVariable Long id) {
+    public boolean returnOrder(@PathVariable Long id) {
         Order order = orderService.getOrderById(id);
         order.setHasBeenPayed(true);
         return orderService.saveOrder(order);

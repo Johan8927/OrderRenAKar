@@ -5,7 +5,7 @@ public class User {
     private int id;
     String userName;
     String firstName;
-    String dateOfBirth;
+    static String dateOfBirth;
     int licenceId;
     int licenceYear;
     int hasOrderId;
@@ -44,12 +44,12 @@ public class User {
         this.firstName = firstName;
     }
 
-    public String getDateOfBirth() {
+    public static String getDateOfBirth() {
         return dateOfBirth;
     }
 
     public void setDateOfBirth(String dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
+        User.dateOfBirth = dateOfBirth;
     }
 
     public int getLicenceId() {

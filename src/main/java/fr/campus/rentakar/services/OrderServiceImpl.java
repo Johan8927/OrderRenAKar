@@ -1,7 +1,7 @@
-// OrderServiceImpl.java
 package fr.campus.rentakar.services;
 
 import fr.campus.rentakar.model.Order;
+import fr.campus.rentakar.model.User;
 import fr.campus.rentakar.model.Vehicule;
 import fr.campus.rentakar.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -28,8 +29,7 @@ public class OrderServiceImpl implements OrderService {
         this.restTemplate = restTemplate;
     }
 
-    public Vehicule getVehiculeDetails(Long vehiculeId) {
-
+    public Vehicule getVehiculeDetails(int vehiculeId) {
         String url = vehicleServiceUrl + vehiculeId;
         return restTemplate.getForObject(url, Vehicule.class);
     }
@@ -46,15 +46,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order saveOrder(Order order) {
-        boolean hasActiveOrder = orderRepository.existsByUserIdAndHasBeenPayedFalse(order.getUserId());
+    public boolean saveOrder(Order order) {
+        boolean hasActiveOrder = orderRepository.existsByUserIdAndHasBeenPayedFalse((long) order.getUserId());
         if (hasActiveOrder) {
             throw new RuntimeException("Vous ne pouvez commander qu'un seul véhicule à la fois!");
         }
 
         Vehicule vehicule = getVehiculeDetails(order.getVehiculeId());
-        if (!vehicule.isAvailable()) {
-            throw new RuntimeException("Véhicule non disponible");
+        if (!vehicule.isAvailable(order.getStartingOrderDate(), order.getEndingOrderDate())) {
+            throw new RuntimeException("Véhicule non disponible pendant les dates demandées.");
         }
 
         LocalDate today = LocalDate.now();
@@ -66,11 +66,50 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("La date de début doit être avant la date de fin.");
         }
 
-        int caution = (int) (order.getEndingOrderDate().toEpochDay() - order.getStartingOrderDate().toEpochDay()) * CAUTION_RATE;
-        order.setCaution(caution);
-        vehicule.setIsAvailable(false);
+        LocalDate birthDate = LocalDate.parse(User.getDateOfBirth());
+        int age = today.getYear() - birthDate.getYear();
+        if (birthDate.plusYears(age).isAfter(today)) {
+            age--;
+        }
 
-        return orderRepository.save(order);
+        if (age < 18) {
+            throw new RuntimeException("Le client doit avoir au moins 18 ans et un permis de conduire pour réserver un véhicule.");
+        }
+
+        int horsePowers = vehicule.getHorsePower();
+        if ((age < 21 && horsePowers >= 8) || (age < 25 && horsePowers >= 13)) {
+            throw new RuntimeException("Le client ne peut pas réserver un véhicule de cette puissance fiscale.");
+        }
+
+        orderRepository.save(order);
+        return true;
+    }
+
+    private float finalPrice(Order order) {
+        LocalDate startingOrderDate = order.getStartingOrderDate();
+        LocalDate endingOrderDate = order.getEndingOrderDate();
+        int days = (int) ChronoUnit.DAYS.between(startingOrderDate, endingOrderDate);
+
+        Vehicule vehicule = getVehiculeDetails(order.getVehiculeId());
+        int kilometerEstimate =  order.getKilometerEstimate();
+
+        float price = getPrice(vehicule, kilometerEstimate);
+
+        if (days > 1) {
+            price += (days - 1) * 5;
+        }
+        return price;
+    }
+
+    private float getPrice(Vehicule vehicule, int kilometerEstimate) {
+        float priceBase = 10.0f;
+        float kilometerPrice = 5.0f;
+        return switch (vehicule.getType()) {
+            case "Voiture" -> priceBase + (kilometerPrice * kilometerEstimate);
+            case "Deux Roues" -> priceBase + (vehicule.getHorsePower() * 0.001f * kilometerPrice * kilometerEstimate);
+            case "Utilitaire" -> priceBase + (vehicule.getVolume() * 0.05f * kilometerPrice * kilometerEstimate);
+            default -> throw new RuntimeException("Type de véhicule inconnu pour le calcul du prix.");
+        };
     }
 
     @Override
@@ -92,6 +131,7 @@ public class OrderServiceImpl implements OrderService {
         existingOrder.setEndingOrderDate(updatedOrder.getEndingOrderDate());
         existingOrder.setHasBeenPayed(updatedOrder.isHasBeenPayed());
         existingOrder.setCaution(updatedOrder.getCaution());
+        existingOrder.setKilometerEstimate(updatedOrder.getKilometerEstimate());
 
         return orderRepository.save(existingOrder);
     }

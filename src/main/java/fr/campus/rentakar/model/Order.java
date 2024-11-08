@@ -3,6 +3,8 @@ package fr.campus.rentakar.model;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
+import static fr.campus.rentakar.model.Vehicule.getKilometers;
+
 @Entity
 @Table(name = "`order`")
 public class Order {
@@ -50,11 +52,11 @@ public class Order {
         this.userId = userId;
     }
 
-    public long getVehiculeId() {
+    public int getVehiculeId() {
         return vehiculeId;
     }
 
-    public void setVehiculeId(Long vehiculeId) {
+    public void setVehiculeId(int vehiculeId) {
         this.vehiculeId = Math.toIntExact(vehiculeId);
     }
 
@@ -88,5 +90,17 @@ public class Order {
 
     public void setCaution(int caution) {
         this.caution = caution;
+    }
+
+    public void getUserBirthDate() {
+
+    }
+
+    public int getKilometerEstimate() {
+
+        return getKilometers();
+    }
+
+    public void setKilometerEstimate(Object kilometerEstimate) {
     }
 }

@@ -1,16 +1,16 @@
 package fr.campus.rentakar.model;
 
 
-
+import java.time.LocalDate;
 
 public class Vehicule {
 
     private int id;
-    private char type;
+    private String type;
     private String model;
     private char brand;
     private char color;
-    private int kilometers;
+    private static int kilometers;
     private int horsePower;
     private float cargo;
     private int capacity;
@@ -18,16 +18,17 @@ public class Vehicule {
     private char registration;
     private boolean isAvailable;
 
+
     // constructor
 
 
-    public Vehicule(int id, char type, String model, char brand, char color, int kilometers, int horsePower, float cargo, int capacity, int displacement, char registration, boolean isAvailable) {
+    public Vehicule(int id, String type, String model, char brand, char color, int kilometers, int horsePower, float cargo, int capacity, int displacement, char registration, boolean isAvailable) {
         this.id = id;
-        this.type = type;
+        this.type = String.valueOf(type);
         this.model = model;
         this.brand = brand;
         this.color = color;
-        this.kilometers = kilometers;
+        Vehicule.kilometers = kilometers;
         this.horsePower = horsePower;
         this.cargo = cargo;
         this.capacity = capacity;
@@ -37,7 +38,9 @@ public class Vehicule {
     }
 
     public Vehicule() {
+
     }
+
 
     public int getId() {
         return id;
@@ -47,12 +50,12 @@ public class Vehicule {
         this.id = id;
     }
 
-    public char getType() {
+    public String getType() {
         return type;
     }
 
     public void setType(char type) {
-        this.type = type;
+        this.type = String.valueOf(type);
     }
 
     public String getModel() {
@@ -79,12 +82,12 @@ public class Vehicule {
         this.color = color;
     }
 
-    public int getKilometers() {
+    public static int getKilometers() {
         return kilometers;
     }
 
     public void setKilometers(int kilometers) {
-        this.kilometers = kilometers;
+        Vehicule.kilometers = kilometers;
     }
 
     public int getHorsePower() {
@@ -137,5 +140,18 @@ public class Vehicule {
 
     public boolean isAvailable() {
         return isAvailable;
+    }
+
+    public boolean isAvailable(LocalDate startingOrderDate, LocalDate endingOrderDate) {
+        return startingOrderDate.isAfter(LocalDate.now()) && endingOrderDate.isAfter(startingOrderDate) && isAvailable;
+    }
+
+    public float getVolume() {
+        return cargo;
+    }
+
+    public float getCylindree() {
+        return capacity;
+
     }
 }
