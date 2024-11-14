@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @EnableJpaRepositories
-@EntityScan
+@EntityScan(basePackages = "fr.campus.rentakar.model")
 
 public class RentAKarApplication {
 

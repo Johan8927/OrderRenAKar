@@ -1,6 +1,7 @@
 package fr.campus.rentakar.services;
 
 import fr.campus.rentakar.model.Order;
+import fr.campus.rentakar.model.Vehicule;
 
 import java.util.List;
 
@@ -15,9 +16,10 @@ public interface OrderService {
 
     Order updateOrder(Long id, Order updatedOrder);
 
-    List<Order> getOrdersByUserId(Long userId);
+    String getVehicleDetails(int vehicleId);
 
-    List<Order> getOrdersByVehicleId(Long vehicleId);
+    List<Vehicule> getAvailableVehicules(String startDate, String endDate);
 
+    List<Vehicule> getAllVehicles();
 }
 

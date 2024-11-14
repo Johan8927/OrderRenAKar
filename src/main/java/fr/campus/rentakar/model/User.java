@@ -1,5 +1,9 @@
 package fr.campus.rentakar.model;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+
 public class User {
 
     private int id;
@@ -132,5 +136,14 @@ public class User {
         this.role = role;
     }
 
+    public LocalDate getEndingOrderDate() {
+        // Exemple de valeur par défaut
+        return LocalDate.now().plusYears(1);
+    }
+
+    public Instant getStartingOrderDate() {
+        // Exemple de valeur par défaut
+        return LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC);
+    }
 }
 

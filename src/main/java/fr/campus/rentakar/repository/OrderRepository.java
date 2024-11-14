@@ -13,7 +13,7 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    @Query("SELECT o FROM Order o WHERE o.startingOrderDate <= :startDate AND o.EndingOrderDate >= :endDate AND o.userId = :userId AND o.hasBeenPayed = false")
+    @Query("SELECT o FROM Order o WHERE o.startingOrderDate <= :startDate AND o.endingOrderDate >= :endDate AND o.userId = :userId AND o.hasBeenPayed = false")
     List<Order> findAvailableVehiculesByDatesAndUserId(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("userId") int userId);
 
     @Query("SELECT o FROM Order o WHERE o.userId = :userId AND o.hasBeenPayed = false")

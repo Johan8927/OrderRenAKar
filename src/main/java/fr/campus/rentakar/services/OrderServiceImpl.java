@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -16,12 +17,12 @@ import java.util.List;
 @Service
 public class OrderServiceImpl implements OrderService {
 
-    private static final int CAUTION_RATE = 10;
     private final OrderRepository orderRepository;
-    private final RestTemplate restTemplate;
 
     @Value("${service.vehicles.url}")
     private String vehicleServiceUrl;
+
+    private final RestTemplate restTemplate;
 
     @Autowired
     public OrderServiceImpl(OrderRepository orderRepository, RestTemplate restTemplate) {
@@ -29,9 +30,25 @@ public class OrderServiceImpl implements OrderService {
         this.restTemplate = restTemplate;
     }
 
-    public Vehicule getVehiculeDetails(int vehiculeId) {
-        String url = vehicleServiceUrl + vehiculeId;
-        return restTemplate.getForObject(url, Vehicule.class);
+    // Modifié pour retourner un JSON sous forme de chaîne
+    @Override
+    public String getVehicleDetails(int vehicleId) {
+        String url = vehicleServiceUrl + "/" + vehicleId;
+        Vehicule vehicle = restTemplate.getForObject(url, Vehicule.class);
+        if (vehicle == null) {
+            throw new RuntimeException("Véhicule non trouvé avec l'ID: " + vehicleId);
+        }
+        // Retourne les détails du véhicule sous forme de chaîne JSON
+        return "{ \"id\": " + vehicle.getId() + ", " +
+                "\"model\": \"" + vehicle.getModel() + "\", " +
+                "\"horsePower\": " + vehicle.getHorsePower() + ", " +
+                "\"type\": \"" + vehicle.getType() + "\", " +
+                "\"available\": " + vehicle.isAvailable() + ", " +
+                "\"displacement\": " + vehicle.getDisplacement() + ", " +
+                "\"capacity\": " + vehicle.getCapacity() + ", " +
+                "\"brand\": \"" + vehicle.getBrand() + "\", " +
+                "\"color\": \"" + vehicle.getColor() + "\", " +
+                "\"registration\": \"" + vehicle.getRegistration() + "\"}";
     }
 
     @Override
@@ -47,24 +64,65 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public boolean saveOrder(Order order) {
-        boolean hasActiveOrder = orderRepository.existsByUserIdAndHasBeenPayedFalse((long) order.getUserId());
-        if (hasActiveOrder) {
-            throw new RuntimeException("Vous ne pouvez commander qu'un seul véhicule à la fois!");
+        // Vérifier que l'ID de l'utilisateur est valide (exemple avec une validation simple)
+        int userId = Math.toIntExact(order.getUserId());
+        User user;
+
+        // Vérifie que l'ID est un nombre et non null
+        if (userId > 0) {  // Assurez-vous que l'ID est positif
+            user = restTemplate.getForObject("http://localhost:8082/users/" + userId, User.class);
+            if (user == null) {
+                throw new RuntimeException("Utilisateur introuvable pour l'ID : " + userId);
+            }
+        } else {
+            throw new IllegalArgumentException("ID d'utilisateur invalide : " + userId);
         }
 
-        Vehicule vehicule = getVehiculeDetails(order.getVehiculeId());
+        // Vérification du véhicule
+        Vehicule vehicule = restTemplate.getForObject(vehicleServiceUrl + "/" + order.getVehiculeId(), Vehicule.class);
+        if (vehicule == null) {
+            throw new RuntimeException("Véhicule introuvable pour l'ID : " + order.getVehiculeId());
+        }
+
+        // Vérification de la disponibilité du véhicule
         if (!vehicule.isAvailable(order.getStartingOrderDate(), order.getEndingOrderDate())) {
             throw new RuntimeException("Véhicule non disponible pendant les dates demandées.");
         }
 
-        LocalDate today = LocalDate.now();
-        if (order.getStartingOrderDate().isBefore(today) || order.getEndingOrderDate().isBefore(today)) {
+        // Vérification de l'âge et des conditions pour la réservation
+        int age = getAge(user, LocalDate.now());
+        if ((age < 21 && vehicule.getHorsePower() >= 8) || (age < 25 && vehicule.getHorsePower() >= 13)) {
+            throw new RuntimeException("Le client ne peut pas réserver ce véhicule.");
+        }
+
+        try {
+            // URL de l'API qui permet de créer une commande (sans ID dans l'URL)
+            String url = "http://localhost:9090/orders"; // Le service REST qui accepte une commande POST
+
+            // Envoi de la requête POST avec l'objet `Order` dans le corps de la requête
+            restTemplate.postForObject(url, order, Order.class);
+
+            return true;
+        } catch (Exception e) {
+            System.out.println("Error in saveOrder: " + e.getMessage());
+            return false;
+        }
+    }
+
+
+    private int getAge(User order, LocalDate today) {
+        LocalDate endingOrderDate = order.getEndingOrderDate();
+        if (endingOrderDate == null) {
+            throw new IllegalArgumentException("La date de fin de commande est nulle !");
+        }
+
+        // Logique pour une date passée
+        if (order.getStartingOrderDate().isBefore(Instant.from(today)) || order.getEndingOrderDate().isBefore(today)) {
             throw new RuntimeException("Les dates de prêt doivent être dans le futur.");
         }
 
-        if (order.getStartingOrderDate().isAfter(order.getEndingOrderDate())) {
-            throw new RuntimeException("La date de début doit être avant la date de fin.");
-        }
+
+        // Calcul de l'âge du client basé sur sa date de naissance
 
         LocalDate birthDate = LocalDate.parse(User.getDateOfBirth());
         int age = today.getYear() - birthDate.getYear();
@@ -75,14 +133,7 @@ public class OrderServiceImpl implements OrderService {
         if (age < 18) {
             throw new RuntimeException("Le client doit avoir au moins 18 ans et un permis de conduire pour réserver un véhicule.");
         }
-
-        int horsePowers = vehicule.getHorsePower();
-        if ((age < 21 && horsePowers >= 8) || (age < 25 && horsePowers >= 13)) {
-            throw new RuntimeException("Le client ne peut pas réserver un véhicule de cette puissance fiscale.");
-        }
-
-        orderRepository.save(order);
-        return true;
+        return age;
     }
 
     private float finalPrice(Order order) {
@@ -90,9 +141,10 @@ public class OrderServiceImpl implements OrderService {
         LocalDate endingOrderDate = order.getEndingOrderDate();
         int days = (int) ChronoUnit.DAYS.between(startingOrderDate, endingOrderDate);
 
-        Vehicule vehicule = getVehiculeDetails(order.getVehiculeId());
-        int kilometerEstimate =  order.getKilometerEstimate();
+        Vehicule vehicule = restTemplate.getForObject(vehicleServiceUrl + "/" + order.getVehiculeId(), Vehicule.class);
+        int kilometerEstimate = order.getKilometerEstimate();
 
+        assert vehicule != null;
         float price = getPrice(vehicule, kilometerEstimate);
 
         if (days > 1) {
@@ -138,11 +190,11 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Order> getOrdersByUserId(Long userId) {
-        return List.of();
+        return List.of();  // Vous pouvez compléter cette méthode selon vos besoins
     }
 
     @Override
     public List<Order> getOrdersByVehicleId(Long vehicleId) {
-        return List.of();
+        return List.of();  // Vous pouvez compléter cette méthode selon vos besoins
     }
 }

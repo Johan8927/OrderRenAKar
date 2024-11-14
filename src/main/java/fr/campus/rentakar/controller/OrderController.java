@@ -1,4 +1,3 @@
-// OrderController.java
 package fr.campus.rentakar.controller;
 
 import fr.campus.rentakar.model.Order;
@@ -6,13 +5,14 @@ import fr.campus.rentakar.model.Vehicule;
 import fr.campus.rentakar.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/order")
+@RequestMapping("/orders")
 public class OrderController {
 
     private final OrderService orderService;
@@ -32,10 +32,11 @@ public class OrderController {
         return orderService.getOrderById(id);
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public boolean createOrder(@RequestBody Order order) {
-        return orderService.saveOrder(order);
+    @PostMapping("/create")
+    public ResponseEntity<Boolean> createOrder(@RequestBody Order order) {
+        boolean saveOrder = orderService.saveOrder(order);
+        // Logique de création d'une commande
+        return new ResponseEntity<>(saveOrder ,HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
@@ -56,13 +57,21 @@ public class OrderController {
         orderService.deleteOrder(id);
     }
 
+    // L'endpoint suivant est mis à jour pour être plus spécifique
     @GetMapping("/available/{startDate}/{endDate}")
     public List<Vehicule> getAvailableVehicules(@PathVariable String startDate, @PathVariable String endDate) {
-        return List.of();
+        return orderService.getAvailableVehicules(startDate, endDate);  // Ajoutez la logique de service
     }
 
+    // Récupérer tous les véhicules
     @GetMapping("/vehicle")
     public List<Vehicule> getAllVehicles() {
-        return List.of();
+        return orderService.getAllVehicles();  // Ajoutez la logique de service
+    }
+
+    // Endpoint pour obtenir les détails d'un véhicule par son ID
+    @GetMapping("/vehicle/{vehicleId}")
+    public String getVehicleDetails(@PathVariable int vehicleId) {
+        return orderService.getVehicleDetails(vehicleId);
     }
 }

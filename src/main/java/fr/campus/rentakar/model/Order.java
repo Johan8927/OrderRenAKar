@@ -1,63 +1,66 @@
 package fr.campus.rentakar.model;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.LocalDate;
-
-import static fr.campus.rentakar.model.Vehicule.getKilometers;
-
 @Entity
 @Table(name = "`order`")
 public class Order {
 
-    // constructeur général de "order"
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "order_id")
-    private int id;
-    private int userId;
-    private int vehiculeId;
+    private Long id;
+    private Long userId;
+    private Long vehiculeId;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDate startingOrderDate;
-    private LocalDate EndingOrderDate;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private LocalDate endingOrderDate;
     private boolean hasBeenPayed;
-    private int caution;
+    private float caution;
+    private int kilometerEstimate;
 
-    // Getters et Setters
+    // Constructeur par défaut
+    public Order() {}
 
-    public Order(int id, int userId, int vehiculeId, LocalDate startingOrderDate, LocalDate endingOrderDate, boolean hasBeenPayed, int caution) {
+    // Constructeur avec tous les paramètres
+    public Order(Long id, Long userId, Long vehiculeId, LocalDate startingOrderDate, LocalDate endingOrderDate,
+                 boolean hasBeenPayed, float caution, int kilometerEstimate) {
         this.id = id;
         this.userId = userId;
         this.vehiculeId = vehiculeId;
         this.startingOrderDate = startingOrderDate;
-        EndingOrderDate = endingOrderDate;
+        this.endingOrderDate = endingOrderDate;
         this.hasBeenPayed = hasBeenPayed;
         this.caution = caution;
+        this.kilometerEstimate = kilometerEstimate;
     }
 
-    public Order() {
-    }
-
-    public int getId() {
+    // Getters et Setters
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public int getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
-    public int getVehiculeId() {
+    public Long getVehiculeId() {
         return vehiculeId;
     }
 
-    public void setVehiculeId(int vehiculeId) {
-        this.vehiculeId = Math.toIntExact(vehiculeId);
+    public void setVehiculeId(Long vehiculeId) {
+        this.vehiculeId = vehiculeId;
     }
 
     public LocalDate getStartingOrderDate() {
@@ -68,6 +71,15 @@ public class Order {
         this.startingOrderDate = startingOrderDate;
     }
 
+    public LocalDate getEndingOrderDate() {
+        return endingOrderDate != null ? endingOrderDate : LocalDate.now(); // Exemple de valeur par défaut
+    }
+
+
+    public void setEndingOrderDate(LocalDate endingOrderDate) {
+        this.endingOrderDate = endingOrderDate;
+    }
+
     public boolean isHasBeenPayed() {
         return hasBeenPayed;
     }
@@ -76,31 +88,25 @@ public class Order {
         this.hasBeenPayed = hasBeenPayed;
     }
 
-    public LocalDate getEndingOrderDate() {
-        return EndingOrderDate;
-    }
-
-    public void setEndingOrderDate(LocalDate endingOrderDate) {
-        EndingOrderDate = endingOrderDate;
-    }
-
-    public int getCaution() {
+    public float getCaution() {
         return caution;
     }
 
-    public void setCaution(int caution) {
+    public void setCaution(float caution) {
         this.caution = caution;
     }
 
-    public void getUserBirthDate() {
-
-    }
-
     public int getKilometerEstimate() {
-
-        return getKilometers();
+        return kilometerEstimate;
     }
 
-    public void setKilometerEstimate(Object kilometerEstimate) {
+    public void setKilometerEstimate(int kilometerEstimate) {
+        this.kilometerEstimate = kilometerEstimate;
     }
+
+    // Méthode pour vérifier si les dates sont valides (optionnel)
+    public boolean isValidOrder() {
+        return startingOrderDate.isBefore(endingOrderDate) && !startingOrderDate.isBefore(LocalDate.now());
+    }
+
 }
