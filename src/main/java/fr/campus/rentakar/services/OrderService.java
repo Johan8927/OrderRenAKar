@@ -21,5 +21,9 @@ public interface OrderService {
     List<Vehicule> getAvailableVehicules(String startDate, String endDate);
 
     List<Vehicule> getAllVehicles();
+
+    List<Order> getOrdersByUserId(Long userId);
+
+    List<Order> getOrdersByVehicleId(Long vehicleId);
 }
 

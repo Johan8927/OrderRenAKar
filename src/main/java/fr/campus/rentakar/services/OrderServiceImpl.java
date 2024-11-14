@@ -52,6 +52,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public List<Vehicule> getAvailableVehicules(String startDate, String endDate) {
+        return List.of();
+    }
+
+    @Override
+    public List<Vehicule> getAllVehicles() {
+        return List.of();
+    }
+
+    @Override
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
