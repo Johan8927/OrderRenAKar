@@ -1,7 +1,7 @@
 package fr.campus.rentakar.controller;
 
 import fr.campus.rentakar.model.Order;
-import fr.campus.rentakar.model.Vehicule;
+import fr.campus.rentakar.model.Vehicle;
 import fr.campus.rentakar.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,55 +23,90 @@ public class OrderController {
     }
 
     @GetMapping
-    public List<Order> getAllOrders() {
-        return orderService.getAllOrders();
+    public ResponseEntity<List<Order>> getAllOrders() {
+        List<Order> orders = orderService.getAllOrders();
+        return ResponseEntity.ok(orders);
     }
 
     @GetMapping("/{id}")
-    public Order getOrderById(@PathVariable Long id) {
-        return orderService.getOrderById(id);
+    public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
+        try {
+            Order order = orderService.getOrderById(id);
+            return ResponseEntity.ok(order);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Boolean> createOrder(@RequestBody Order order) {
+    public ResponseEntity<String> createOrder(@RequestBody Order order) {
         boolean saveOrder = orderService.saveOrder(order);
-        // Logique de création d'une commande
-        return new ResponseEntity<>(saveOrder ,HttpStatus.CREATED);
+        if (saveOrder) {
+            return ResponseEntity.status(HttpStatus.CREATED).body("Order created successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create the order.");
+        }
     }
 
     @PutMapping("/{id}")
-    public Order updateOrder(@PathVariable Long id, @RequestBody Order order) {
-        return orderService.updateOrder(id, order);
+    public ResponseEntity<Order> updateOrder(@PathVariable Long id, @RequestBody Order order) {
+        try {
+            Order updatedOrder = orderService.updateOrder(id, order);
+            return ResponseEntity.ok(updatedOrder);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
     @PutMapping("/return/{id}")
-    public boolean returnOrder(@PathVariable Long id) {
-        Order order = orderService.getOrderById(id);
-        order.setHasBeenPayed(true);
-        return orderService.saveOrder(order);
+    public ResponseEntity<String> returnOrder(@PathVariable Long id) {
+        try {
+            Order order = orderService.getOrderById(id);
+            order.setHasBeenPayed(true);
+            orderService.updateOrder(id, order);
+            return ResponseEntity.ok("Order returned and marked as paid.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Order not found.");
+        }
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteOrder(@PathVariable Long id) {
-        orderService.deleteOrder(id);
+    public ResponseEntity<String> deleteOrder(@PathVariable Long id) {
+        try {
+            orderService.deleteOrder(id);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Order deleted successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Order not found.");
+        }
     }
 
-    // L'endpoint suivant est mis à jour pour être plus spécifique
     @GetMapping("/available/{startDate}/{endDate}")
-    public List<Vehicule> getAvailableVehicules(@PathVariable String startDate, @PathVariable String endDate) {
-        return orderService.getAvailableVehicules(startDate, endDate);  // Ajoutez la logique de service
+    public ResponseEntity<List<Vehicle>> getAvailableVehicules(@PathVariable String startDate, @PathVariable String endDate) {
+        try {
+            List<Vehicle> vehicles = orderService.getAvailableVehicules(startDate, endDate);
+            return ResponseEntity.ok(vehicles);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
-    // Récupérer tous les véhicules
     @GetMapping("/vehicle")
-    public List<Vehicule> getAllVehicles() {
-        return orderService.getAllVehicles();  // Ajoutez la logique de service
+    public ResponseEntity<List<Vehicle>> getAllVehicles() {
+        try {
+            List<Vehicle> vehicles = orderService.getAllVehicles();
+            return ResponseEntity.ok(vehicles);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
-    // Endpoint pour obtenir les détails d'un véhicule par son ID
     @GetMapping("/vehicle/{vehicleId}")
-    public String getVehicleDetails(@PathVariable int vehicleId) {
-        return orderService.getVehicleDetails(vehicleId);
+    public ResponseEntity<String> getVehicleDetails(@PathVariable int vehicleId) {
+        try {
+            String vehicleDetails = orderService.getVehicleDetails(vehicleId);
+            return ResponseEntity.ok(vehicleDetails);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Vehicle not found.");
+        }
     }
 }

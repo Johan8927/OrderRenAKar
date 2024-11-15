@@ -48,8 +48,8 @@ public class User {
         this.firstName = firstName;
     }
 
-    public static String getDateOfBirth() {
-        return dateOfBirth;
+    public static LocalDate getDateOfBirth() {
+        return LocalDate.parse(dateOfBirth);
     }
 
     public void setDateOfBirth(String dateOfBirth) {

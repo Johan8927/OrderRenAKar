@@ -1,25 +1,38 @@
 package fr.campus.rentakar.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+
 @Entity
-@Table(name = "`order`")
+@Table(name = "orders") // Renommage de la table pour éviter les conflits avec les mots-clés SQL
 public class Order {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @NotNull(message = "User ID cannot be null")
     private Long userId;
+
+    @NotNull(message = "Vehicle ID cannot be null")
     private Long vehiculeId;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDate startingOrderDate;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDate endingOrderDate;
+
     private boolean hasBeenPayed;
+
+    @Min(value = 0, message = "Caution must be a positive value")
     private float caution;
+
+    @Min(value = 0, message = "Kilometer estimate must be a positive value")
     private int kilometerEstimate;
 
     // Constructeur par défaut
@@ -72,15 +85,14 @@ public class Order {
     }
 
     public LocalDate getEndingOrderDate() {
-        return endingOrderDate != null ? endingOrderDate : LocalDate.now(); // Exemple de valeur par défaut
+        return endingOrderDate;
     }
-
 
     public void setEndingOrderDate(LocalDate endingOrderDate) {
         this.endingOrderDate = endingOrderDate;
     }
 
-    public boolean isHasBeenPayed() {
+    public boolean getHasBeenPayed() { // Nom adapté selon les conventions JavaBeans
         return hasBeenPayed;
     }
 
@@ -104,9 +116,13 @@ public class Order {
         this.kilometerEstimate = kilometerEstimate;
     }
 
-    // Méthode pour vérifier si les dates sont valides (optionnel)
+    // Méthode pour vérifier si les dates sont valides
     public boolean isValidOrder() {
+        if (startingOrderDate == null || endingOrderDate == null) {
+            return false;
+        }
         return startingOrderDate.isBefore(endingOrderDate) && !startingOrderDate.isBefore(LocalDate.now());
     }
+
 
 }

@@ -2,14 +2,13 @@ package fr.campus.rentakar.services;
 
 import fr.campus.rentakar.model.Order;
 import fr.campus.rentakar.model.User;
-import fr.campus.rentakar.model.Vehicule;
+import fr.campus.rentakar.model.Vehicle;
 import fr.campus.rentakar.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -18,11 +17,13 @@ import java.util.List;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
+    private final RestTemplate restTemplate;
 
     @Value("${service.vehicles.url}")
     private String vehicleServiceUrl;
 
-    private final RestTemplate restTemplate;
+    @Value("${service.users.url}")
+    private String userServiceUrl;
 
     @Autowired
     public OrderServiceImpl(OrderRepository orderRepository, RestTemplate restTemplate) {
@@ -30,15 +31,17 @@ public class OrderServiceImpl implements OrderService {
         this.restTemplate = restTemplate;
     }
 
-    // Modifié pour retourner un JSON sous forme de chaîne
     @Override
     public String getVehicleDetails(int vehicleId) {
         String url = vehicleServiceUrl + "/" + vehicleId;
-        Vehicule vehicle = restTemplate.getForObject(url, Vehicule.class);
+        Vehicle vehicle = restTemplate.getForObject(url, Vehicle.class);
         if (vehicle == null) {
             throw new RuntimeException("Véhicule non trouvé avec l'ID: " + vehicleId);
         }
-        // Retourne les détails du véhicule sous forme de chaîne JSON
+        return convertVehicleToJson(vehicle);
+    }
+
+    private String convertVehicleToJson(Vehicle vehicle) {
         return "{ \"id\": " + vehicle.getId() + ", " +
                 "\"model\": \"" + vehicle.getModel() + "\", " +
                 "\"horsePower\": " + vehicle.getHorsePower() + ", " +
@@ -52,12 +55,14 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<Vehicule> getAvailableVehicules(String startDate, String endDate) {
+    public List<Vehicle> getAvailableVehicules(String startDate, String endDate) {
+        // Vous pouvez compléter cette méthode pour interroger un autre service
         return List.of();
     }
 
     @Override
-    public List<Vehicule> getAllVehicles() {
+    public List<Vehicle> getAllVehicles() {
+        // Vous pouvez compléter cette méthode pour interroger un autre service
         return List.of();
     }
 
@@ -69,115 +74,89 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order getOrderById(Long id) {
         return orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Commande non trouvée avec l'ID : " + id));
     }
 
     @Override
     public boolean saveOrder(Order order) {
-        // Vérifier que l'ID de l'utilisateur est valide (exemple avec une validation simple)
-        int userId = Math.toIntExact(order.getUserId());
-        User user;
+        User user = validateUser(order.getUserId());
+        /*
+        Vehicle vehicule = validateVehicule(order.getVehiculeId());
 
-        // Vérifie que l'ID est un nombre et non null
-        if (userId > 0) {  // Assurez-vous que l'ID est positif
-            user = restTemplate.getForObject("http://localhost:8082/users/" + userId, User.class);
-            if (user == null) {
-                throw new RuntimeException("Utilisateur introuvable pour l'ID : " + userId);
-            }
-        } else {
-            throw new IllegalArgumentException("ID d'utilisateur invalide : " + userId);
+        validateVehiculeAvailability(vehicule, order);
+
+
+        validateUserEligibility(user, vehicule);
+
+         */
+        orderRepository.save(order);
+        return true;
+    }
+
+    private User validateUser(Long userId) {
+        String url = userServiceUrl + "/" + userId;
+        User user = restTemplate.getForObject(url, User.class);
+        if (user == null) {
+            throw new RuntimeException("Utilisateur introuvable pour l'ID : " + userId);
         }
+        return user;
+    }
 
-        // Vérification du véhicule
-        Vehicule vehicule = restTemplate.getForObject(vehicleServiceUrl + "/" + order.getVehiculeId(), Vehicule.class);
+    private Vehicle validateVehicule(Long vehiculeId) {
+        String url = vehicleServiceUrl + "/" + vehiculeId;
+        Vehicle vehicule = restTemplate.getForObject(url, Vehicle.class);
         if (vehicule == null) {
-            throw new RuntimeException("Véhicule introuvable pour l'ID : " + order.getVehiculeId());
+            throw new RuntimeException("Véhicule introuvable pour l'ID : " + vehiculeId);
         }
+        return vehicule;
+    }
 
-        // Vérification de la disponibilité du véhicule
+    private void validateVehiculeAvailability(Vehicle vehicule, Order order) {
         if (!vehicule.isAvailable(order.getStartingOrderDate(), order.getEndingOrderDate())) {
-            throw new RuntimeException("Véhicule non disponible pendant les dates demandées.");
-        }
-
-        // Vérification de l'âge et des conditions pour la réservation
-        int age = getAge(user, LocalDate.now());
-        if ((age < 21 && vehicule.getHorsePower() >= 8) || (age < 25 && vehicule.getHorsePower() >= 13)) {
-            throw new RuntimeException("Le client ne peut pas réserver ce véhicule.");
-        }
-
-        try {
-            // URL de l'API qui permet de créer une commande (sans ID dans l'URL)
-            String url = "http://localhost:9090/orders"; // Le service REST qui accepte une commande POST
-
-            // Envoi de la requête POST avec l'objet `Order` dans le corps de la requête
-            restTemplate.postForObject(url, order, Order.class);
-
-            return true;
-        } catch (Exception e) {
-            System.out.println("Error in saveOrder: " + e.getMessage());
-            return false;
+            throw new RuntimeException("Le véhicule n'est pas disponible pour les dates spécifiées.");
         }
     }
 
-
-    private int getAge(User order, LocalDate today) {
-        LocalDate endingOrderDate = order.getEndingOrderDate();
-        if (endingOrderDate == null) {
-            throw new IllegalArgumentException("La date de fin de commande est nulle !");
+    private void validateUserEligibility(User user, Vehicle vehicule) {
+        int age = calculateAge(User.getDateOfBirth(), LocalDate.now());
+        if ((age < 21 && vehicule.getHorsePower() >= 8) || (age < 25 && vehicule.getHorsePower() >= 13)) {
+            throw new RuntimeException("L'utilisateur ne remplit pas les conditions pour louer ce véhicule.");
         }
+    }
 
-        // Logique pour une date passée
-        if (order.getStartingOrderDate().isBefore(Instant.from(today)) || order.getEndingOrderDate().isBefore(today)) {
-            throw new RuntimeException("Les dates de prêt doivent être dans le futur.");
-        }
-
-
-        // Calcul de l'âge du client basé sur sa date de naissance
-
-        LocalDate birthDate = LocalDate.parse(User.getDateOfBirth());
+    private int calculateAge(LocalDate birthDate, LocalDate today) {
         int age = today.getYear() - birthDate.getYear();
         if (birthDate.plusYears(age).isAfter(today)) {
             age--;
         }
-
-        if (age < 18) {
-            throw new RuntimeException("Le client doit avoir au moins 18 ans et un permis de conduire pour réserver un véhicule.");
-        }
         return age;
     }
 
-    private float finalPrice(Order order) {
-        LocalDate startingOrderDate = order.getStartingOrderDate();
-        LocalDate endingOrderDate = order.getEndingOrderDate();
-        int days = (int) ChronoUnit.DAYS.between(startingOrderDate, endingOrderDate);
+    private float calculateFinalPrice(Order order, Vehicle vehicule) {
+        long days = ChronoUnit.DAYS.between(order.getStartingOrderDate(), order.getEndingOrderDate());
+        float basePrice = 10.0f;
+        float pricePerKm = 5.0f;
+        float totalPrice;
 
-        Vehicule vehicule = restTemplate.getForObject(vehicleServiceUrl + "/" + order.getVehiculeId(), Vehicule.class);
-        int kilometerEstimate = order.getKilometerEstimate();
-
-        assert vehicule != null;
-        float price = getPrice(vehicule, kilometerEstimate);
+        switch (vehicule.getType()) {
+            case "Voiture" -> totalPrice = basePrice + (pricePerKm * order.getKilometerEstimate());
+            case "Deux Roues" ->
+                    totalPrice = basePrice + (vehicule.getHorsePower() * 0.001f * pricePerKm * order.getKilometerEstimate());
+            case "Utilitaire" ->
+                    totalPrice = basePrice + (vehicule.getCapacity() * 0.05f * pricePerKm * order.getKilometerEstimate());
+            default -> throw new RuntimeException("Type de véhicule inconnu pour le calcul du prix.");
+        }
 
         if (days > 1) {
-            price += (days - 1) * 5;
+            totalPrice += (days - 1) * 5;
         }
-        return price;
-    }
-
-    private float getPrice(Vehicule vehicule, int kilometerEstimate) {
-        float priceBase = 10.0f;
-        float kilometerPrice = 5.0f;
-        return switch (vehicule.getType()) {
-            case "Voiture" -> priceBase + (kilometerPrice * kilometerEstimate);
-            case "Deux Roues" -> priceBase + (vehicule.getHorsePower() * 0.001f * kilometerPrice * kilometerEstimate);
-            case "Utilitaire" -> priceBase + (vehicule.getVolume() * 0.05f * kilometerPrice * kilometerEstimate);
-            default -> throw new RuntimeException("Type de véhicule inconnu pour le calcul du prix.");
-        };
+        return totalPrice;
     }
 
     @Override
     public void deleteOrder(Long id) {
         if (!orderRepository.existsById(id)) {
-            throw new RuntimeException("Order not found with id: " + id);
+            throw new RuntimeException("Commande non trouvée avec l'ID : " + id);
         }
         orderRepository.deleteById(id);
     }
@@ -185,13 +164,12 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order updateOrder(Long id, Order updatedOrder) {
         Order existingOrder = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Commande non trouvée avec l'ID : " + id));
 
         existingOrder.setUserId(updatedOrder.getUserId());
         existingOrder.setVehiculeId(updatedOrder.getVehiculeId());
         existingOrder.setStartingOrderDate(updatedOrder.getStartingOrderDate());
         existingOrder.setEndingOrderDate(updatedOrder.getEndingOrderDate());
-        existingOrder.setHasBeenPayed(updatedOrder.isHasBeenPayed());
         existingOrder.setCaution(updatedOrder.getCaution());
         existingOrder.setKilometerEstimate(updatedOrder.getKilometerEstimate());
 
@@ -199,12 +177,24 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public String getVehicleDetails(Long vehicleId) {
+        return "";
+    }
+
+    @Override
+    public List<Vehicle> getAvailableVehicules(LocalDate startDate, LocalDate endDate) {
+        return List.of();
+    }
+
+    @Override
     public List<Order> getOrdersByUserId(Long userId) {
-        return List.of();  // Vous pouvez compléter cette méthode selon vos besoins
+        // Implémentez cette méthode selon vos besoins
+        return List.of();
     }
 
     @Override
     public List<Order> getOrdersByVehicleId(Long vehicleId) {
-        return List.of();  // Vous pouvez compléter cette méthode selon vos besoins
+        // Implémentez cette méthode selon vos besoins
+        return List.of();
     }
 }
